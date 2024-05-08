@@ -15,7 +15,9 @@
       <div>
         <h2>Online Users</h2>
         <div id="online-users">
-          <span v-for="user in onlineUsers" :key="user.sid">{{ user.name }}</span>
+          <span v-for="user in onlineUsers" :key="user.sid">{{
+            user.name
+          }}</span>
         </div>
         <hr />
       </div>
@@ -28,9 +30,10 @@
             'other-message': !isMyMessage(msg),
           }"
         >
-          <span class="msg-content">{{ msg.name }}: {{ msg.message }}</span>
+          <span class="msg-content" v-html="displayMessage(msg.message)"></span>
           <span class="msg-time">{{ msg.time }}</span>
         </li>
+
         <li v-if="botIsTyping" class="typing-indicator">Bot is typing...</li>
       </ul>
       <input
@@ -42,7 +45,6 @@
     </div>
   </div>
 </template>
-
 
 <script>
 import io from "socket.io-client";
@@ -90,7 +92,17 @@ export default {
         this.botIsTyping = false;
       });
     },
-
+    displayMessage(message) {
+      // Check if the message contains code snippets
+      if (message.includes("```")) {
+        let formattedMessage = message.replace(
+          /```([^\`]*)```/g,
+          "<pre><code>$1</code></pre>"
+        );
+        return formattedMessage;
+      }
+      return message;
+    },
     registerUser() {
       if (this.name.trim()) {
         this.socket.emit("register_user", this.name);
@@ -124,8 +136,8 @@ export default {
       return this.name === msg.name;
     },
     filterInput(event) {
-      event.target.value = event.target.value.replace(/[^a-zA-Z_]/g, '');
-    }
+      event.target.value = event.target.value.replace(/[^a-zA-Z_]/g, "");
+    },
   },
 };
 </script>
