@@ -4,19 +4,18 @@
       <p v-if="nameError" style="color: red">{{ nameError }}</p>
       <input
         @keyup.enter="registerUser"
+        @input="filterInput"
         v-model="name"
         placeholder="Enter your name"
       />
       <button @click="registerUser">Enter Chat</button>
     </div>
     <div v-else>
-      <h1>Real-time Chat</h1>
+      <h1>Chat</h1>
       <div>
         <h2>Online Users</h2>
         <div id="online-users">
-          <span v-for="user in onlineUsers" :key="user.sid">{{
-            user.name
-          }}</span>
+          <span v-for="user in onlineUsers" :key="user.sid">{{ user.name }}</span>
         </div>
         <hr />
       </div>
@@ -43,6 +42,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import io from "socket.io-client";
@@ -123,6 +123,9 @@ export default {
     isMyMessage(msg) {
       return this.name === msg.name;
     },
+    filterInput(event) {
+      event.target.value = event.target.value.replace(/[^a-zA-Z_]/g, '');
+    }
   },
 };
 </script>

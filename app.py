@@ -28,10 +28,50 @@ users_col = db.users
 
 @socketio.on('connect')
 def handle_connect(auth=None):
-    messages = list(messages_col.find({}, {'_id': 0}))
+    messages = list(messages_col.find({}, {'_id': 0}))  # already excluding _id here
     for message in messages:
         emit('receive_message', message)
     update_users_online()
+
+@socketio.on('send_message')
+def handle_send_message(data):
+    user_message = data["message"]
+    if user_message.startswith("/ask"):
+        query = user_message[5:].strip()
+        user_message_doc = {'name': data['name'], 'message': user_message, 'time': data["time"]}
+        print(user_message_doc)
+        result = messages_col.insert_one(user_message_doc)
+        user_message_doc['_id'] = str(result.inserted_id) 
+        emit('receive_message', user_message_doc, broadcast=True)
+        try:
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": query}],
+                max_tokens=400,
+                temperature=0.5
+            )
+            output = response.choices[0].message['content'].strip()
+            bot_message = {
+                'name': "ChatGPT",
+                'message': output,
+                'time': data["time"]
+            }
+            result = messages_col.insert_one(bot_message)
+            bot_message['_id'] = str(result.inserted_id)
+            emit('receive_message', bot_message, broadcast=True)
+            emit('bot_answer', broadcast=True)
+        except RateLimitError as e:
+            emit('receive_message', {'name': 'System', 'message': 'Rate limit exceeded, please try again later.'}, broadcast=True)
+        except APIError as e:
+            emit('receive_message', {'name': 'System', 'message': 'An API error occurred: ' + str(e)}, broadcast=True)
+        except Exception as e:
+            emit('receive_message', {'name': 'System', 'message': 'An unexpected error occurred: ' + str(e)}, broadcast=True)
+    else:
+        user_message_doc = {'name': data['name'], 'message': user_message, 'time': data["time"]}
+        result = messages_col.insert_one(user_message_doc)
+        user_message_doc['_id'] = str(result.inserted_id) 
+        emit('receive_message', user_message_doc, broadcast=True)
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -49,39 +89,7 @@ def handle_register_user(name):
         emit('user_joined', name)
         update_users_online()
 
-@socketio.on('send_message')
-def handle_send_message(data):
-    user_message = data["message"]
-    print(data)
-    if user_message.startswith("/ask"):
-        query = user_message[5:].strip()
-        try:
-            response = openai.ChatCompletion.create(
-                model="gpt-4",
-                messages=[{"role": "user", "content": query}],
-                max_tokens=400,
-                temperature=0.5
-            )
-            output = response.choices[0].message['content'].strip()
-            message = {'name': "ChatGPT", 'message': output,'time': data["time"]}
-            messages_col.insert_one(message)
-            emit('bot_answer', broadcast=True)
-            emit('receive_message', {'name': 'ChatGPT', 'message': output,'time': data["time"]}, broadcast=True)
-            
-        except RateLimitError as e:
-            emit('receive_message', {'name': 'System', 'message': 'Rate limit exceeded, please try again later.'}, broadcast=True)
-        except APIError as e:
-            emit('receive_message', {'name': 'System', 'message': 'An API error occurred: ' + str(e)}, broadcast=True)
-        except Exception as e:
-            emit('receive_message', {'name': 'System', 'message': 'An unexpected error occurred: ' + str(e)}, broadcast=True)
-    else:
-        message = {'name': data['name'], 'message': user_message,'time': data["time"]}
-        messages_col.insert_one(message)
-        message['_id'] = str(message['_id'])
-        emit('receive_message', message, broadcast=True)
-      
-        
-        
+       
 def update_users_online():
     users_online = list(users_col.find({}, {'_id': 0, 'name': 1}))
     emit('users_online', users_online, broadcast=True)
