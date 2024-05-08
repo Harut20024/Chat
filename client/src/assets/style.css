@@ -47,15 +47,23 @@ ul,
 }
 
 li {
-  position: relative;
-  margin: 5px 0;
-  background-color: #fff;
-  padding: 10px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
   display: flex;
-  align-items: end;
+  flex-direction: end; 
+  align-items: flex-end;  
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
 }
+
+.name {
+  margin-right: 10px;
+  font-weight: bold;
+  padding-right: 5px;
+  align-self: flex-start; 
+}
+
 
 li .msg-content {
   flex-grow: 1;
@@ -107,6 +115,7 @@ input[placeholder="Write a message"] {
 button {
   font-weight: bold;
 }
+
 
 .typing-indicator {
   color: #888;

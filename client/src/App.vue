@@ -30,6 +30,7 @@
             'other-message': !isMyMessage(msg),
           }"
         >
+          <span class="name">{{ msg.name }} </span>
           <span class="msg-content" v-html="displayMessage(msg.message)"></span>
           <span class="msg-time">{{ msg.time }}</span>
         </li>
@@ -93,7 +94,6 @@ export default {
       });
     },
     displayMessage(message) {
-      // Check if the message contains code snippets
       if (message.includes("```")) {
         let formattedMessage = message.replace(
           /```([^\`]*)```/g,
@@ -104,9 +104,15 @@ export default {
       return message;
     },
     registerUser() {
-      if (this.name.trim()) {
+      const firstLetterCharCode = this.name.charCodeAt(0);
+      const isUppercase =
+        firstLetterCharCode >= 65 && firstLetterCharCode <= 90;
+
+      if (this.name.trim() && isUppercase && this.name.length >= 2) {
         this.socket.emit("register_user", this.name);
         this.nameEntered = true;
+      } else {
+        this.nameError = "you write not a human name";
       }
     },
     sendMessage() {
